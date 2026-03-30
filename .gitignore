@@ -1,0 +1,29 @@
+# 忽略目录
+log/
+bin/
+build/
+
+# 忽略文件
+*.o
+*.so
+*.a
+*.log
+*.dat
+
+# 忽略文件类型
+# 可执行文件
+!*.cc
+!*.cpp
+!*.h
+
+# 忽略编辑器配置文件
+.vscode/
+
+#自定义的忽略
+.vscode/
+*.out
+*.txt
+*.dat
+*.log
+*.xml
+*.conf
