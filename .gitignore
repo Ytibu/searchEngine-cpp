@@ -2,6 +2,7 @@
 log/
 bin/
 build/
+tests/
 
 # 忽略文件
 *.o
@@ -9,6 +10,8 @@ build/
 *.a
 *.log
 *.dat
+*test*
+*Test*
 
 # 忽略文件类型
 # 可执行文件
