@@ -1,8 +1,8 @@
 #ifndef __SPLIT_TOOL_H__
 #define __SPLIT_TOOL_H__ 
 
-#include "Configuration.h"
-#include "../include/cppjieba/Jieba.hpp"
+#include "../base/Configuration.h"
+#include "../../include/cppjieba/Jieba.hpp"
 #include <string>
 #include <vector>
 using std::string;
@@ -19,8 +19,8 @@ using std::vector;
 class SplitTool
 {
 public:
-    SplitTool();
-    virtual ~SplitTool();
+    SplitTool() = default;
+    virtual ~SplitTool() = default;
     virtual vector<string> cut(const string &sentence) = 0; //分词函数，纯虚函数提供接口
 };
 
@@ -28,8 +28,8 @@ class SplitToolCppJieba: public SplitTool
 {
 public:
     SplitToolCppJieba(Configuration &conf);
-    virtual ~SplitToolCppJieba();
-    virtual vector<string> cut(const string &sentence);
+    ~SplitToolCppJieba();
+    vector<string> cut(const string &sentence) override;
 
 private:
     Configuration & _conf;  //配置文件路径

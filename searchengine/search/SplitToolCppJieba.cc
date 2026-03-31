@@ -1,5 +1,5 @@
 #include "SplitTool.h"
-#include "../include/cppjieba/Jieba.hpp"
+#include "../../include/cppjieba/Jieba.hpp"
 #include <iostream>
 using std::cout;
 using std::map;

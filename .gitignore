@@ -3,6 +3,7 @@ log/
 bin/
 build/
 tests/
+docs/
 
 # 忽略文件
 *.o

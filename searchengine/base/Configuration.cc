@@ -1,5 +1,5 @@
 #include "Configuration.h"
-#include "../include/tinyxml/tinyxml2.h"
+#include "../../include/tinyxml/tinyxml2.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
