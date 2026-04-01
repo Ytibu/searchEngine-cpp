@@ -2,14 +2,14 @@
 
 #include <iostream>
 
-ThreadPool::ThreadPool(int threadNum, int bufSize)
-    : _threadNum(threadNum), _bufSize(bufSize), _taskQueue(bufSize)
+ThreadPool::ThreadPool(size_t threadNum, size_t queSize)
+    : _threadNum(threadNum), _queSize(queSize), _taskQueue(_queSize), _isRunning(true)
 {
+    _vecThreads.reserve(_threadNum);
 }
 
 ThreadPool::~ThreadPool()
 {
-    stop();
 }
 
 // 启动线程池
@@ -20,7 +20,7 @@ void ThreadPool::start()
         _vecThreads.push_back(std::make_unique<Thread>(std::bind(&ThreadPool::threadFunc, this)));
     }
 
-    for(auto &thread : _vecThreads)
+    for (auto &thread : _vecThreads)
     {
         thread->start();
     }
@@ -29,6 +29,7 @@ void ThreadPool::start()
 // 停止线程池
 void ThreadPool::stop()
 {
+    _isRunning = false;
     _taskQueue.wakeup(); // 唤醒所有等待线程，防止死锁
     for (auto &thread : _vecThreads)
     {
@@ -38,9 +39,12 @@ void ThreadPool::stop()
 }
 
 // 添加任务
-void ThreadPool::addTask(Task task)
+void ThreadPool::addTask(const Task &task)
 {
-    _taskQueue.push(task);
+    if (task)
+    {
+        _taskQueue.push(task);
+    }
 }
 
 // 缓冲区中获取一个任务
@@ -52,18 +56,24 @@ TaskQueue::Task ThreadPool::getTask()
 // 线程池中每个线程的函数执行体
 void ThreadPool::threadFunc()
 {
-    while (true)
+    while (_isRunning)
     {
         Task task = getTask();
         if (!task)
         {
+            std::cerr << "ThreadPool is stopping, no more tasks to execute." << std::endl;
             break;
         }
-        try {
-            task();
-        } catch(const std::exception &e) {
+        try
+        {
+            task(); // 执行任务
+        }
+        catch (const std::exception &e)
+        {
             std::cerr << "ThreadPool task exception: " << e.what() << std::endl;
-        } catch(...) {
+        }
+        catch (...)
+        {
             std::cerr << "ThreadPool task unknown exception" << std::endl;
         }
     }

@@ -21,8 +21,6 @@ private:
     pthread_t _pthId;   //线程id
     bool _isRunning;    //线程运行状态
     ThreadCallback _cb; //执行任务的函数对象
-
-
 };
 
 #endif

@@ -55,7 +55,7 @@ TaskQueue::Task TaskQueue::pop()
     }
     if(!_flag)
     {
-        return nullptr; // 返回空指针表示没有任务可获取
+        return Task(); // 返回空任务表示没有任务可获取
     }
     Task task = _que.front();
     _que.pop();
