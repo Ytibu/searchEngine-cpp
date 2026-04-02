@@ -9,7 +9,7 @@
 
 class SocketIO {
 public:
-    SocketIO(int sockfd);
+    explicit SocketIO(int sockfd);
     ~SocketIO();
     size_t readline(char *buf, size_t max); // 读取一行数据
     size_t readn(char *buf, size_t count);  // 读取指定长度的数据

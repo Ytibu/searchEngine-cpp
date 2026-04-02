@@ -7,7 +7,7 @@
 class Socket { 
 public:
     Socket();
-    Socket(int sockfd);
+    explicit Socket(int sockfd);
     ~Socket();
     void nonblock();    //设置非阻塞模式
     void shutdownWrite();   //关闭套接字写端

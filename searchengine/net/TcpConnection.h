@@ -3,12 +3,15 @@
 
 #include <memory>
 #include <functional>
+
 #include <string>
 #include "Socket.h"
 #include "SocketIO.h"
 #include "InetAddress.h"
-// #include "EventLoop.h"  // 移除循环依赖的包含
+
 using std::string;
+using std::function;
+using std::shared_ptr;
 
 // 前置声明解决循环依赖问题
 class EventLoop;
@@ -17,11 +20,12 @@ class EventLoop;
  * 网络连接类
  */
 
-typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 
-class TcpConnection {
+class TcpConnection : public std::enable_shared_from_this<TcpConnection> // 使TcpConnection对象能够生成shared_ptr
+{
 public:
-    typedef std::function<void(const TcpConnectionPtr&)> TcpConnectionCallback;
+    using TcpConnectionPtr = shared_ptr<TcpConnection>;
+    using TcpConnectionCallback = function<void(const TcpConnectionPtr&)>;
 
 private:
     Socket _sockfd;
@@ -36,19 +40,20 @@ private:
     TcpConnectionCallback _onCloseCb;
 
 public:
-    TcpConnection(int sockfd);
+    explicit TcpConnection(int sockfd);
     ~TcpConnection();
 
-    string receive();   // 接收数据
+    string recv();   // 接收数据
     void send(const string& msg);   // 发送数据
+    bool isClosed() const; // 判断连接是否关闭
     void sendInLoop(const string& msg); //将数据交给IO线程发送
     void sendAndClose(const string& msg);   // 发送数据并关闭连接,针对网页服务
     void shutdown();    // 关闭连接
 
     /*设置回调函数*/
-    void setConnectionCallback(TcpConnectionCallback cb);
-    void setMessageCallback(TcpConnectionCallback cb);
-    void setCloseCallback(TcpConnectionCallback cb);
+    void setConnectionCallback(const TcpConnectionCallback &cb);
+    void setMessageCallback(const TcpConnectionCallback &cb);
+    void setCloseCallback(const TcpConnectionCallback &cb);
 
     void handleConnectionCallback();    //调用相应的回调函数
     void handleMessageCallback();
@@ -56,7 +61,10 @@ public:
 
     string toString();  //返回连接的字符串表示
 
-    
+private:
+    // 获取本端和对端的地址信息
+    InetAddress getLocalAddr();
+    InetAddress getPeerAddr();
 };
 
 #endif

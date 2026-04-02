@@ -7,8 +7,10 @@
 
 #include "InetAddress.h"
 
-Acceptor::Acceptor(int fd, const InetAddress &addr)
-    : _listenSock(fd), _addr(addr) {
+Acceptor::Acceptor(const string &ip, unsigned short port)
+: _listenSock()
+, _addr(ip, port)
+{
 }
 
 void Acceptor::ready() // 服务器监听准备
@@ -27,6 +29,12 @@ int Acceptor::accept() // 接收新连接
     }
     return connfd;
 }
+
+int Acceptor::fd() const
+{
+    return _listenSock.fd();
+}
+
 void Acceptor::setReuseAddr(bool on) // 地址复用
 {
     int optval = on ? 1 : 0;
@@ -43,12 +51,7 @@ void Acceptor::setReusePort(bool on) // 端口复用
 }
 void Acceptor::bind()                // 绑定地址
 {
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(_addr.port());
-    inet_pton(AF_INET, _addr.ip().c_str(), &addr.sin_addr);
-    if (::bind(_listenSock.fd(), (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (::bind(_listenSock.fd(), (struct sockaddr *)_addr.getAddr(), sizeof(struct sockaddr)) < 0) {
         std::cerr << "Failed to bind socket" << std::endl;
     }
 }

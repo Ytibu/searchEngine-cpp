@@ -6,20 +6,21 @@
 
 using std::cerr;
 using std::endl;
+using std::string;
 
 InetAddress::InetAddress(unsigned short port)
 {
-    memset(&_addr, 0, sizeof(_addr));  // 将_addr结构体清零
+    ::memset(&_addr, 0, sizeof(_addr));  // 将_addr结构体清零
     _addr.sin_family = AF_INET;
     _addr.sin_port = htons(port);
     _addr.sin_addr.s_addr = INADDR_ANY;  // 监听所有网卡
 }
-InetAddress::InetAddress(const char *ip, unsigned short port)
+InetAddress::InetAddress(const string &ip, unsigned short port)
 {
-    memset(&_addr, 0, sizeof(_addr));  // 将_addr结构体清零
+    ::memset(&_addr, 0, sizeof(_addr));  // 将_addr结构体清零
     _addr.sin_family = AF_INET;
     _addr.sin_port = htons(port);
-    inet_pton(AF_INET, ip, &_addr.sin_addr);  // 将点分十进制的ip地址转换为网络字节序
+    _addr.sin_addr.s_addr = inet_addr(ip.c_str());  // 将点分十进制的ip地址转换为网络字节序的二进制形式
 }
 InetAddress::InetAddress(const struct sockaddr_in &addr)
     :_addr(addr)
@@ -42,4 +43,10 @@ std::string InetAddress::ip() const
 unsigned short InetAddress::port() const
 {
     return ntohs(_addr.sin_port);  // 将网络字节序的端口号转换为主机字节序
+}
+
+// 返回sockaddr_in结构体
+const struct sockaddr_in *InetAddress::getAddr() const
+{
+    return &_addr;
 }
