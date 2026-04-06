@@ -1,27 +1,28 @@
 #include "TcpConnection.h"
 
+#include "EventLoop.h"
 #include "InetAddress.h"
 #include "SocketIO.h"
 #include "Socket.h"
 
+#include <sys/socket.h>
+
 #include <sstream>
 #include <iostream>
 
-#include <sys/socket.h>
-
 using std::cerr;
+using std::cout;
 using std::endl;
 using std::ostringstream;
-using std::cout;
 using std::string;
 
-TcpConnection::TcpConnection(int sockfd)
+TcpConnection::TcpConnection(int sockfd, EventLoop *loop)
     : _sockfd(sockfd),
       _sockIO(sockfd),
+      _loop(loop),
       _localAddr(getLocalAddr()),
       _peerAddr(getPeerAddr()),
-      _isShutdownWrite(false),
-      _loop(nullptr) // 初始化EventLoop指针为nullptr
+      _isShutdownWrite(false)
 {
 }
 TcpConnection::~TcpConnection()
@@ -52,13 +53,30 @@ bool TcpConnection::isClosed() const
 }
 
 // 将数据交给IO线程发送
-void TcpConnection::sendInLoop(const string &msg) {}
+void TcpConnection::sendInLoop(const string &msg)
+{
+    if (_loop)
+    {
+        _loop->runInLoop(bind(&TcpConnection::send, this, msg));
+    }
+}
 
 // 发送数据并关闭连接,针对网页服务
-void TcpConnection::sendAndClose(const string &msg) {}
+void TcpConnection::sendAndClose(const string &msg)
+{
+    send(msg);
+    shutdown();
+}
 
 // 关闭连接
-void TcpConnection::shutdown() {}
+void TcpConnection::shutdown()
+{
+    if (!_isShutdownWrite)
+    {
+        _isShutdownWrite = true;
+        _sockfd.shutdownWrite();
+    }
+}
 
 /*设置回调函数*/
 void TcpConnection::setConnectionCallback(const TcpConnectionCallback &cb) { _onConnectionCb = cb; }
@@ -70,7 +88,8 @@ void TcpConnection::handleConnectionCallback()
 {
     if (_onConnectionCb)
         _onConnectionCb(shared_from_this());
-    else{
+    else
+    {
         cout << "_onConnectionCb == nullptr" << endl;
     }
 }
@@ -78,7 +97,8 @@ void TcpConnection::handleMessageCallback()
 {
     if (_onMessageCb)
         _onMessageCb(shared_from_this());
-    else{
+    else
+    {
         cout << "_onMessageCb == nullptr" << endl;
     }
 }
@@ -86,7 +106,8 @@ void TcpConnection::handleCloseCallback()
 {
     if (_onCloseCb)
         _onCloseCb(shared_from_this());
-    else{
+    else
+    {
         cout << "_onCloseCb == nullptr" << endl;
     }
 }
@@ -106,7 +127,7 @@ InetAddress TcpConnection::getLocalAddr()
 {
     struct sockaddr_in localAddr;
     socklen_t addrlen = sizeof(localAddr);
-    if (getsockname(_sockfd.fd(), (struct sockaddr *)&localAddr, &addrlen) == -1)
+    if (::getsockname(_sockfd.fd(), (struct sockaddr *)&localAddr, &addrlen) == -1)
     {
         cerr << "getsockname error" << endl;
     }
@@ -117,7 +138,7 @@ InetAddress TcpConnection::getPeerAddr()
 {
     struct sockaddr_in peerAddr;
     socklen_t addrlen = sizeof(peerAddr);
-    if (getpeername(_sockfd.fd(), (struct sockaddr *)&peerAddr, &addrlen) == -1)
+    if (::getpeername(_sockfd.fd(), (struct sockaddr *)&peerAddr, &addrlen) == -1)
     {
         cerr << "getpeername error" << endl;
     }

@@ -1,13 +1,14 @@
 #include "TcpServer.h"
+#include "InetAddress.h"
 
 #include <sys/socket.h>
 
-#include <iostream>
 #include <utility>
+#include <string>
 
-#include "InetAddress.h"
+using std::string;
 
-TcpServer::TcpServer(const char *ip, unsigned short port)
+TcpServer::TcpServer(const string &ip, const unsigned short port)
     :_acceptor(ip, port), _eventLoop(_acceptor)
 {
 }

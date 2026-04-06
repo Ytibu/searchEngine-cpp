@@ -8,21 +8,22 @@
 
 #include <iostream>
 #include <utility>
+#include <vector>
 
 using std::cerr;
 using std::cout;
 using std::endl;
 using std::move;
+using std::vector;
 
 EventLoop::EventLoop(Acceptor &acceptor)
-    : _epollfd(createEpollfd())
-    , _acceptor(acceptor)
-    , _isLooping(false)
-    , _eventList(1024) // 初始化事件列表大小
-    , _eventfd(createEventFd())
+    : _epollfd(createEpollfd()), _acceptor(acceptor), _isLooping(false), _eventList(1024) // 初始化事件列表大小
+      ,
+      _eventfd(createEventFd()), _mutex() // 初始化互斥锁
 {
     int listenfd = _acceptor.fd();
     addEpollReadFd(listenfd); // 将监听文件描述符添加到epoll中
+    addEpollReadFd(_eventfd); // 将eventfd添加到epoll中，用于异步唤醒执行回调
 }
 
 EventLoop::~EventLoop()
@@ -40,59 +41,11 @@ void EventLoop::loop()
         waitEpollfd(); // 等待事件发生
     }
 }
-
 // 退出事件循环
 void EventLoop::unloop()
 {
     _isLooping = false;
 }
-
-// 向IO线程发送数据
-void EventLoop::runInLoop(const Functor &cb)
-{
-    if (cb)
-    {
-        _pendingFunctors.push_back(cb);
-    }
-}
-
-// 激活_eventfd(执行写操作)
-void EventLoop::wakeup()
-{
-    uint64_t one = 1;
-    ssize_t n = write(_eventfd, &one, sizeof(one));
-    if (n != sizeof(one))
-    {
-        // 处理写入错误
-    }
-}
-
-// 处理_eventfd(执行写操作)
-void EventLoop::handleRead()
-{
-    uint64_t one = 1;
-    ssize_t n = read(_eventfd, &one, sizeof(one));
-    if (n != sizeof(one))
-    {
-        // 处理读取错误
-    }
-}
-
-// 执行待处理的回调函数
-void EventLoop::doPendingFunctors() {}
-
-void EventLoop::setConnectionCallback(EpollCallback &&cb)
-{
-    _onConnectionCb = move(cb);
-} // 设置连接回调函数
-void EventLoop::setMessageCallback(EpollCallback &&cb)
-{
-    _onMessageCb = move(cb);
-} // 设置消息回调函数
-void EventLoop::setCloseCallback(EpollCallback &&cb)
-{
-    _onCloseCb = move(cb);
-} // 设置关闭回调函数
 
 // 创建epollfd
 int EventLoop::createEpollfd()
@@ -101,19 +54,6 @@ int EventLoop::createEpollfd()
     if (fd == -1)
     {
         cerr << "Failed to create epollfd: " << strerror(errno) << endl;
-    }
-
-    return fd;
-}
-
-
-// 创建eventFd
-int EventLoop::createEventFd()
-{
-    int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if (fd == -1)
-    {
-        cerr << "Failed to create eventfd: " << strerror(errno) << endl;
     }
 
     return fd;
@@ -131,7 +71,6 @@ void EventLoop::addEpollReadFd(int fd)
         cerr << "Failed to add fd to epoll: " << strerror(errno) << endl;
     }
 }
-
 // 将fd从epoll中删除
 void EventLoop::delEpollReadFd(int fd)
 {
@@ -144,7 +83,6 @@ void EventLoop::delEpollReadFd(int fd)
         cerr << "Failed to delete fd from epoll: " << strerror(errno) << endl;
     }
 }
-
 // 执行事件循环，由loop调用
 void EventLoop::waitEpollfd()
 {
@@ -181,6 +119,11 @@ void EventLoop::waitEpollfd()
                     handleConnection(); // 处理新连接
                 }
             }
+            else if (fd == _eventfd)
+            {
+                handleRead();
+                doPendingFunctors();
+            }
             else
             {
                 if (_eventList[idx].events & EPOLLIN)
@@ -202,7 +145,7 @@ void EventLoop::handleConnection()
         return;
     }
 
-    TcpConnectionPtr conn(new TcpConnection(peerfd));
+    TcpConnectionPtr conn(new TcpConnection(peerfd, this));
     _connMap[peerfd] = conn; // 将新连接添加到连接映射中
     addEpollReadFd(peerfd);
 
@@ -234,8 +177,77 @@ void EventLoop::handleMessage(int peerfd)
     }
     else
     {
-        // 连接不存在，可能已经关闭
-        // 可以选择删除连接或者进行其他处理
         cout << "Connection with fd " << peerfd << " does not exist." << endl;
     }
 }
+
+// 创建eventFd
+int EventLoop::createEventFd()
+{
+    int fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (fd == -1)
+    {
+        cerr << "Failed to create eventfd: " << strerror(errno) << endl;
+    }
+
+    return fd;
+}
+// 处理_eventfd(执行写操作)
+void EventLoop::handleRead()
+{
+    uint64_t one = 1;
+    ssize_t n = read(_eventfd, &one, sizeof(one));
+    if (n != sizeof(one))
+    {
+        cerr << "Failed to read from eventfd: " << strerror(errno) << endl;
+    }
+}
+
+// 执行待处理的回调函数：线程处理完任务后会调用这个函数来执行之前通过runInLoop添加的回调函数
+void EventLoop::doPendingFunctors()
+{
+    vector<Functor> functors;
+    {
+        MutexLockGuard lock(_mutex);     // 加锁保护_pendingFunctors
+        functors.swap(_pendingFunctors); // 交换待处理的回调函数列表
+    }
+
+    for (auto &functor : functors)
+    {
+        functor(); // 执行回调函数
+    }
+}
+
+// 向IO线程发送数据
+void EventLoop::runInLoop(Functor &&cb)
+{
+    {
+        MutexLockGuard autoLock(_mutex); // 加锁保护_pendingFunctors
+        _pendingFunctors.push_back(move(cb));
+    }
+    wakeup(); // 激活_eventfd，通知IO线程有新的回调函数需要执行
+}
+
+// 激活_eventfd(执行写操作)
+void EventLoop::wakeup()
+{
+    uint64_t one = 1;
+    ssize_t n = write(_eventfd, &one, sizeof(one));
+    if (n != sizeof(one))
+    {
+        cerr << "Failed to write from eventfd: " << strerror(errno) << endl;
+    }
+}
+
+void EventLoop::setConnectionCallback(EpollCallback &&cb)
+{
+    _onConnectionCb = move(cb);
+} // 设置连接回调函数
+void EventLoop::setMessageCallback(EpollCallback &&cb)
+{
+    _onMessageCb = move(cb);
+} // 设置消息回调函数
+void EventLoop::setCloseCallback(EpollCallback &&cb)
+{
+    _onCloseCb = move(cb);
+} // 设置关闭回调函数

@@ -35,9 +35,9 @@ private:
     EpollCallback _onMessageCb;
     EpollCallback _onCloseCb;
 
-    int _eventfd; // eventfd实例文件描述符,线程间通信
-    std::vector<Functor> _pendingFunctors; // 需要延迟执行的回调函数
-    MutexLockGuard _mutexLockGuard;        // 保护_pendingFunctors的互斥锁
+    int _eventfd;                          // eventfd实例文件描述符,线程间通信
+    std::vector<Functor> _pendingFunctors; // 线程间通信需要延迟执行的回调函数
+    MutexLock _mutex;                      // 保护_pendingFunctors的互斥锁
 
 public:
     EventLoop(Acceptor &acceptor);
@@ -60,8 +60,9 @@ private:
     void handleRead();        // 处理_eventfd(执行写操作)
     void doPendingFunctors(); // 执行待处理的回调函数
 public:
-    void runInLoop(const Functor &cb); // 向IO线程发送数据
-    void wakeup();                     // 激活_eventfd(执行写操作)
+    void runInLoop(Functor &&cb); // 向IO线程发送数据
+    void wakeup();                // 激活_eventfd(执行写操作)
+
 public:
     void setConnectionCallback(EpollCallback &&cb); // 设置连接回调函数
     void setMessageCallback(EpollCallback &&cb);    // 设置消息回调函数

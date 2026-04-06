@@ -5,6 +5,10 @@
 #include "EventLoop.h"
 #include "TcpConnection.h"
 
+#include <string>
+
+using std::string;
+
 /**
  * Tcp服务器类
  */
@@ -14,7 +18,7 @@ public:
     typedef TcpConnection::TcpConnectionCallback TcpServerCallback;
 
 public:
-    TcpServer(const char *ip, unsigned short port);
+    TcpServer(const string &ip,const unsigned short port);
     void start();   // 启动服务器
     void stop();    // 停止服务器
     void setConnectionCallback(TcpServerCallback &&cb);
@@ -22,7 +26,7 @@ public:
     void setCloseCallback(TcpServerCallback &&cb);
     
 private:
-   Acceptor _acceptor; // 接受器对象
+    Acceptor _acceptor; // 接受器对象
     EventLoop _eventLoop; // epoll对象
 
 };

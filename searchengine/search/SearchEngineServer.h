@@ -1,9 +1,9 @@
 #ifndef __SEARCH_ENGINE_SERVER_H__
 #define __SEARCH_ENGINE_SERVER_H__ 
 
-#include "TcpConnection.h"
-#include "TcpServer.h"
-#include "ThreadPool.h"
+#include "../net/TcpConnection.h"
+#include "../net/TcpServer.h"
+#include "../net/ThreadPool.h"
 #include <string>
 using std::string;
 
@@ -12,7 +12,7 @@ using std::string;
  */
 class SearchEngineServer {
 public:
-    SearchEngineServer(const string &ip, short port);
+    SearchEngineServer(const string &ip,const unsigned short port, const int threadNum, const int taskSize);
     void start();   // 启动服务器
 
 private:

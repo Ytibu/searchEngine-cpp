@@ -18,9 +18,6 @@ Thread::Thread(ThreadCallback &&cb)
 }
 Thread::~Thread()
 {
-    if(_isRunning) {
-        pthread_detach(_pthId);
-    }
 }
 
 // 启动线程
@@ -30,7 +27,7 @@ void Thread::start()
         return;
     }
     int ret = pthread_create(&_pthId, nullptr, threadFunc, this);
-    if (ret != 0) {
+    if (ret) {
         // 创建线程失败
         perror("pthread_create");
         return;
@@ -45,7 +42,7 @@ void Thread::join()
         return;
     }
     int ret = pthread_join(_pthId, nullptr);
-    if (ret != 0) {
+    if (ret) {
         // 等待线程失败
         perror("pthread_join");
         return;

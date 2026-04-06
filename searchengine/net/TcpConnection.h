@@ -40,7 +40,7 @@ private:
     TcpConnectionCallback _onCloseCb;
 
 public:
-    explicit TcpConnection(int sockfd);
+    explicit TcpConnection(int sockfd, EventLoop *loop);
     ~TcpConnection();
 
     string recv();   // 接收数据
