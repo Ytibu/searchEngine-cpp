@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Search | The Future</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <div class="glow-bg"></div>
+
+  <div class="page-shell">
+    <header class="topbar">
+      <div id="connectionStatus" class="status-pill glass" hidden></div>
+    </header>
+
+    <main class="search-home">
+      <section class="hero">
+        <h1 class="logo cyber-glitch" data-text="NEURAL SEARCH">NEURAL SEARCH</h1>
+        <p class="subtitle">Enter the mainframe</p>
+
+        <div class="search-container glass">
+          <div class="search-box">
+            <label class="sr-only" for="searchIntent">请输入你想搜索的内容</label>
+            <div class="search-input-wrap">
+              <span class="search-icon pulse" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"></path>
+                </svg>
+              </span>
+              <input
+                id="searchIntent"
+                class="search-input"
+                type="text"
+                placeholder="Initialize query sequence..."
+                autocomplete="off"
+              >
+            </div>
+            <div id="suggestionList" class="suggestion-list glass-dark" hidden></div>
+          </div>
+          <div class="action-row">
+            <button id="searchButton" class="cyber-btn primary" type="button" disabled>
+              <span class="btn-text">EXECUTE</span>
+              <span class="btn-glitch"></span>
+            </button>
+            <button id="clearButton" class="cyber-btn secondary" type="button">
+              <span class="btn-text">PURGE</span>
+              <span class="btn-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel glass">
+        <div class="panel-heading">
+          <div class="selected-keyword neon-text">
+            <span>TARGET:</span> <strong id="selectedKeywordValue"></strong>
+          </div>
+        </div>
+        <div id="keywordList" class="keyword-list hover-list"></div>
+      </section>
+
+      <section class="panel glass results-panel">
+        <div class="panel-heading neon-text"><span id="resultMeta"></span></div>
+        <div id="resultList" class="result-list empty-state"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
