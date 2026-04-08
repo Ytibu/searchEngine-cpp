@@ -9,6 +9,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <cctype>
 
 using std::cerr;
 using std::cout;
@@ -32,9 +33,93 @@ TcpConnection::~TcpConnection()
 // 接收数据
 string TcpConnection::recv()
 {
-    char buf[65535] = {0};
-    _sockIO.readline(buf, sizeof(buf));
-    return string(buf);
+    auto trim = [](std::string &s) {
+        while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || std::isspace(static_cast<unsigned char>(s.back())))) {
+            s.pop_back();
+        }
+        size_t start = 0;
+        while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start]))) {
+            ++start;
+        }
+        if (start > 0) {
+            s.erase(0, start);
+        }
+    };
+
+    std::string request;
+    char buf[4096] = {0};
+
+    // 1) 先读取请求头，直到 CRLF CRLF
+    while (true)
+    {
+        size_t n = _sockIO.readline(buf, sizeof(buf));
+        if (n == 0)
+        {
+            break;
+        }
+
+        request.append(buf, n);
+
+        if (request.size() >= 4 && request.compare(request.size() - 4, 4, "\r\n\r\n") == 0)
+        {
+            break;
+        }
+    }
+
+    if (request.empty())
+    {
+        return request;
+    }
+
+    // 2) 解析 Content-Length 并补齐 body
+    size_t contentLength = 0;
+    std::istringstream headerStream(request);
+    std::string line;
+    while (std::getline(headerStream, line))
+    {
+        if (!line.empty() && line.back() == '\r')
+        {
+            line.pop_back();
+        }
+
+        if (line.empty())
+        {
+            break;
+        }
+
+        const size_t colonPos = line.find(':');
+        if (colonPos == std::string::npos)
+        {
+            continue;
+        }
+
+        std::string key = line.substr(0, colonPos);
+        std::string value = line.substr(colonPos + 1);
+        trim(key);
+        trim(value);
+
+        if (key == "Content-Length" || key == "content-length")
+        {
+            try
+            {
+                contentLength = static_cast<size_t>(std::stoul(value));
+            }
+            catch (...)
+            {
+                contentLength = 0;
+            }
+        }
+    }
+
+    if (contentLength > 0)
+    {
+        std::string body(contentLength, '\0');
+        const size_t readBytes = _sockIO.readn(&body[0], contentLength);
+        body.resize(readBytes);
+        request += body;
+    }
+
+    return request;
 }
 
 // 发送数据
