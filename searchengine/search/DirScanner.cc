@@ -3,6 +3,8 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include <string>
 #include <iostream>
@@ -25,14 +27,23 @@ vector<string> &DirScanner::getFiles()
 // 获取某一目录下的所有文件
 void DirScanner::traverse(const string &dirname)
 {
-    DIR *pDir = opendir(dirname.c_str());
+    char absPath[PATH_MAX] = {0};
+    if (realpath(dirname.c_str(), absPath) == nullptr)
+    {
+        perror("DirScanner::traverse: realpath error");
+        return;
+    }
+
+    std::string fullDirname = absPath;
+
+    DIR *pDir = opendir(fullDirname.c_str());
     if (!pDir)
     {
         perror("DirScanner::traverse: opendir");
         return;
     }
 
-    cout << dirname << " is scanned" << "\n";
+    cout << fullDirname << " is scanned" << "\n";
 
     struct dirent *ptr;
     while ((ptr = readdir(pDir)) != 0)
@@ -43,7 +54,7 @@ void DirScanner::traverse(const string &dirname)
         }
 
         // 构造绝对路径
-        std::string fullPath = dirname + "/" + ptr->d_name;
+        std::string fullPath = fullDirname + "/" + ptr->d_name;
 
         struct stat statBuf;
         if (stat(fullPath.c_str(), &statBuf) == -1)

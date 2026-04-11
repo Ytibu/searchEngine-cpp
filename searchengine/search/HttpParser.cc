@@ -95,7 +95,7 @@ std::string HttpParser::buildErrorResponse(int errorCode, const std::string& err
 
 // 根据请求的 JSON Body 构建推荐词组的 JSON 字符串结果
 std::string HttpParser::getRecommendations(const std::string& requestBody) {
-    std::string intent = "";
+    std::string intent;
     int size = 8; // 默认返回8条推荐
 
     // 1. 简易解析 JSON 请求体: {"intent": "xxx", "size": 8}

@@ -1,10 +1,10 @@
 #include "WebPage.h"
-#include "Configuration.h"
+#include "../base/Configuration.h"
 #include "SplitTool.h"
 #include "DirScanner.h"
 
-#include "../include/tinyxml/tinyxml2.h"
-#include "../include/simhash/Simhasher.hpp"
+#include "../../include/tinyxml/tinyxml2.h"
+#include "../../include/simhash/Simhasher.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -24,8 +24,6 @@ WebPage::WebPage(string &doc, Configuration &config, SplitToolCppJieba &jieba)
 {
     // 处理文档，每个文档转换成一个网页对象
     processDoc(doc, config, jieba);
-
-    // setSimHash(config,_docContent);
 }
 // 获取文档id
 int WebPage::getDocId() const
@@ -43,11 +41,6 @@ string WebPage::getDoc() const
                     "<content>" + _docContent + "</content>\n</doc>\n";
     return fmtTXT;
 }
-
-// uint64_t WebPage::getSimHash() const
-// {
-//     return _simHash;
-// }
 
 // 文档词频统计map
 map<string, int> &WebPage::getWordsMap()
@@ -120,43 +113,9 @@ void WebPage::calcTopK(vector<string> &wordsVec, int k, set<string> &stopWordLis
     }
 }
 
-// void WebPage::setSimHash(Configuration &config,const string &docString)
-// {
-//     map<string,string> simhashPath = config.getConfigMap();
-//     string jieba_dict_path = simhashPath["jieba_dict_path"];
-//     string hmm_model_path = simhashPath["hmm_model_path"];
-//     string idf_path = simhashPath["idf_path"];
-//     string stop_words_path = simhashPath["stop_words_path"];
-
-//     simhash::Simhasher simhash(jieba_dict_path, hmm_model_path,idf_path, stop_words_path);
-//     string Content = docString;
-//     size_t topN = 5;
-//     uint64_t Bin = 0;                              // 指纹
-//     vector<std::pair<string, double>> keywords; // 生成-- 单词 : 权重
-//     simhash.extract(Content, keywords, topN);
-//     simhash.make(Content, topN, Bin); // 将指纹的值赋值给 u64
-//     _simHash = Bin;
-
-// }
-
-// 首字节判断
-//  size_t WebPage::getByteNum_Utf8(const char byte)
-//  {
-//      int byteNum = 0;
-//      for (size_t i = 0; i < 6; ++i)
-//      {
-//          if (byte & (1 << (7 - i)))
-//              ++byteNum;
-//          else
-//              break;
-//      }
-//      return byteNum == 0 ? 1 : byteNum;
-//  }
-
 // 判断两篇文档是否相等
 bool operator==(const WebPage &lhs, const WebPage &rhs)
 {
-    // return simhash::Simhasher::isEqual(lhs.getSimHash(), rhs.getSimHash());
     int count = 0;
     for (auto &keyword : lhs._topWords)
     {

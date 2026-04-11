@@ -19,8 +19,8 @@ using std::vector;
 
 class DictProducer {
 public:
-    DictProducer(const string &dir, set<string> &stopWordList);
-    DictProducer(const string &dir, set<string> &stopWordList, SplitTool *splitTool);  //中文词典构造函数
+    DictProducer(const string &dir, const set<string> &stopWordList);
+    DictProducer(const string &dir, const set<string> &stopWordList, SplitTool *splitTool);  //中文词典构造函数
     
     void buildEnDict(); //创建英文词典
     void buildCnDict(); //创建中文词典
@@ -33,13 +33,13 @@ public:
 private:
     void getFiles(const string &dir);    //获取文件的绝对路径
     void pushDict(const string &word); //添加词典(存储某个单词)
-    size_t getByteNum_Utf8(const char byte);//获取utf8字符字节数
+    size_t getByteNum_Utf8(const unsigned char byte);//获取utf8字符字节数
 
 
 private:
     vector<pair<string,int>> _dict;  //词典(词语,频数)
     map<string, set<int>> _index;  //词典索引（单词,词典索引）
-    SplitTool *_splitTool;  //分词工具
+    SplitTool *_splitTool = nullptr;  //分词工具
     vector<string> _files;  //语料库文件的路径（根据构造函数传入的目录，获取目录下的文件路径）
     set<string> _stopWordList;
 

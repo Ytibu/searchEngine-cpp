@@ -47,7 +47,7 @@ string TcpConnection::recv()
     };
 
     std::string request;
-    char buf[4096] = {0};
+    char buf[65535] = {0};
 
     // 1) 先读取请求头，直到 CRLF CRLF
     while (true)
@@ -115,7 +115,12 @@ string TcpConnection::recv()
     {
         std::string body(contentLength, '\0');
         const size_t readBytes = _sockIO.readn(&body[0], contentLength);
-        body.resize(readBytes);
+        if (readBytes != contentLength)
+        {
+            cerr << "TcpConnection::recv body truncated: expected "
+                 << contentLength << " bytes, got " << readBytes << endl;
+            return std::string();
+        }
         request += body;
     }
 

@@ -1,9 +1,9 @@
 #include "PageLib.h"
 
-#include "Configuration.h"
+#include "../base/Configuration.h"
 #include "DirScanner.h"
 
-#include "../include/tinyxml/tinyxml2.h"
+#include "../../include/tinyxml/tinyxml2.h"
 
 #include <iostream>
 #include <fstream>
@@ -132,7 +132,3 @@ void PageLib::store() const
     ofs.close();
     ofs2.close();
 }
-
-// DirScanner & _dirScanner;   // 扫描目录对象的引用
-// vector<string> _pages;  //存放格式化网页的容器
-// map<int, std::pair<int, int> > _offsetLib;   //存放网页的偏移量（每篇文档在网页库的位置）

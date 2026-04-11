@@ -19,14 +19,14 @@ using std::ofstream;
 using std::string;
 
 /*英文词典建立过程：接收语料文件目录，目录转换为文件路径，将停用词接收*/
-DictProducer::DictProducer(const string &dir, set<string> &stopWordList)
+DictProducer::DictProducer(const string &dir, const set<string> &stopWordList)
     : _stopWordList(stopWordList)
 {
     getFiles(dir); // 将目录转变成文件列表
 }
 
 /*中文词典构造函数：接收语料文件目录，目录转换为文件路径，将停用词接收，接收分词工具*/
-DictProducer::DictProducer(const string &dir, set<string> &stopWordList, SplitTool *splitTool)
+DictProducer::DictProducer(const string &dir, const set<string> &stopWordList, SplitTool *splitTool)
     : _stopWordList(stopWordList), _splitTool(splitTool)
 {
     getFiles(dir); // 将目录转变成文件列表
@@ -90,6 +90,12 @@ void DictProducer::buildEnDict()
 /*中文词典建立*/
 void DictProducer::buildCnDict()
 {
+    if(!_splitTool)
+    {
+        cerr << "Error: buildCnDict: SplitTool is not initialized.\n";
+        return;
+    }
+    // 遍历文件，对每个文件进行处理
     for (auto &dir_file : _files)
     {
         cout << "buildCnDict  Processing: " << dir_file << "\n";
@@ -103,9 +109,9 @@ void DictProducer::buildCnDict()
 
         size_t length = ifs.tellg();
         ifs.seekg(std::ios_base::beg);
-        char *buff = new char[length + 1];
-        ifs.read(buff, length + 1);
-        string txt(buff);
+
+        string txt(length, '\0');
+        ifs.read(&txt[0], length);
 
         vector<string> tmp = _splitTool->cut(txt);
 
@@ -118,7 +124,6 @@ void DictProducer::buildCnDict()
                 pushDict(i);
             }
         }
-        ifs.close();
     }
     std::sort(_dict.begin(), _dict.end());
 }
@@ -265,15 +270,15 @@ void DictProducer::pushDict(const std::string &word)
 }
 
 /* 获取utf8字符的字节 */
-size_t DictProducer::getByteNum_Utf8(const char byte)
+size_t DictProducer::getByteNum_Utf8(const unsigned char byte)
 {
-    int byteNum = 0;
-    for (size_t i = 0; i < 6; ++i)
-    {
-        if (byte & (1 << (7 - i)))
-            ++byteNum;
-        else
-            break;
-    }
-    return byteNum == 0 ? 1 : byteNum;
+    if (byte < 0x80)
+        return 1; // ASCII
+    else if (byte < 0xE0)
+        return 2; // 110xxxxx -> 2字节
+    else if (byte < 0xF0)
+        return 3; // 1110xxxx -> 3字节
+    else if (byte < 0xF8)
+        return 4; // 11110xxx -> 4字节
+    return 0;     // 无效 UTF-8
 }

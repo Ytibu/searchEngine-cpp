@@ -1,7 +1,7 @@
 #ifndef __PAGELIB_H__
 #define __PAGELIB_H__ 
 
-#include "Configuration.h"
+#include "../base/Configuration.h"
 #include "DirScanner.h"
 
 #include <vector>

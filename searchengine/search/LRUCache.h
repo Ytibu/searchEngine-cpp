@@ -16,7 +16,7 @@ using std::pair;
 class LRUCache {
 public:
     LRUCache(int num = 1000);
-    LRUCache(const LRUCache & cache);
+    LRUCache(const LRUCache &cache);
     void addElement(const string &key, const string &value);  //向缓存中添加数据
     void readFromFile(const string & fileName);  //从文件中读取缓存信息
     void writeToFile(const string &filename);   //将缓存信息写入文件

@@ -2,13 +2,13 @@
 #define __WEBPAGESEARCHER_H__ 
 
 #include <string>
-#include "TcpConnection.h"
+#include "../net/TcpConnection.h"
 using std::string;
 
 /**
  * 网页搜索类
  */
-
+using TcpConnectionPtr = shared_ptr<TcpConnection>;
 class WebPageSearcher {
 public:
     WebPageSearcher(string keys, const TcpConnectionPtr &conn);

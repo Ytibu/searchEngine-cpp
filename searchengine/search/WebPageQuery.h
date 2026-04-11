@@ -13,7 +13,6 @@ using std::pair;
  */
 class WebPageQuery {
 public:
-    //WebPageSearcher();
     WebPageQuery();
     string doQuery(const string &str);  //执行查询返回结果
 

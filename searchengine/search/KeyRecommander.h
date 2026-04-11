@@ -1,7 +1,7 @@
 #ifndef __KEYRECOMMANDER_H__
 #define __KEYRECOMMANDER_H__
 
-#include "TcpConnection.h"
+#include "../net/TcpConnection.h"
 
 #include <string>
 #include <queue>
@@ -15,6 +15,9 @@ using std::vector;
 /**
  * 关键字推荐执行类
  */
+class MyResult;
+class MyCompare;
+using TcpConnectionPtr = shared_ptr<TcpConnection>;
 class KeyRecommander{
 public:
     KeyRecommander(string &query, const TcpConnectionPtr&);

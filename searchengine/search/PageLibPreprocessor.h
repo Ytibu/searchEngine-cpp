@@ -1,7 +1,7 @@
 #ifndef __PAGE_LIB_PREPROCESSOR_H__
 #define __PAGE_LIB_PREPROCESSOR_H__ 
 
-#include "Configuration.h"
+#include "../base/Configuration.h"
 #include "SplitTool.h"
 #include "WebPage.h"
 #include "PageLib.h"
