@@ -1,5 +1,4 @@
 #include "Configuration.h"
-#include "../../include/tinyxml/tinyxml2.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -8,6 +7,8 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+
+#include "yaml-cpp/yaml.h"
 
 using std::cerr;
 using std::cout;
@@ -36,163 +37,63 @@ Configuration::~Configuration()
 // 获取对应配置项内容
 map<string, string> &Configuration::getConfigMap()
 {
-    // 如果已经加载过配置，直接返回
+    // 如果已经加载过配置，清空内容，重新加载配置
     if (!_configMap.empty())
     {
-        return _configMap;
+        _configMap.clear();
     }
 
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile(_filePath.c_str());
-    if (doc.ErrorID())
+    try
     {
-        perror("Configuration::getConfigMap: LoadFile");
-        exit(1);
+        YAML::Node config = YAML::LoadFile(_filePath);
+        std::map<std::string, std::string> _configMap;
+
+        const YAML::Node cppjieba = config["CPPJIEBA_PATH"];
+        const YAML::Node simhash = config["SIMHASH_PATH"];
+        const YAML::Node stopword = config["STOP_WORD_LIST"];
+        const YAML::Node webpage = config["WEB_PAGE"];
+
+        if (!cppjieba || !simhash || !stopword || !webpage)
+        {
+            std::cerr << "configuration section is missing in " << _filePath << '\n';
+            return;
+        }
+
+        _configMap["DICT_PATH"] = cppjieba["DICT_PATH"] ? cppjieba["DICT_PATH"].as<std::string>() : throw std::runtime_error("missing required key: DICT_PATH");
+        _configMap["HMM_PATH"] = cppjieba["HMM_PATH"] ? cppjieba["HMM_PATH"].as<std::string>() : throw std::runtime_error("missing required key: HMM_PATH");
+        _configMap["USER_DICT_PATH"] = cppjieba["USER_DICT_PATH"] ? cppjieba["USER_DICT_PATH"].as<std::string>() : throw std::runtime_error("missing required key: USER_DICT_PATH");
+        _configMap["IDF_PATH"] = cppjieba["IDF_PATH"] ? cppjieba["IDF_PATH"].as<std::string>() : throw std::runtime_error("missing required key: IDF_PATH");
+        _configMap["STOP_WORD_PATH"] = cppjieba["STOP_WORD_PATH"] ? cppjieba["STOP_WORD_PATH"].as<std::string>() : throw std::runtime_error("missing required key: STOP_WORD_PATH");
+
+        _configMap["jieba_dict_path"] = simhash["jieba_dict_path"] ? simhash["jieba_dict_path"].as<std::string>() : throw std::runtime_error("missing required key: jieba_dict_path");
+        _configMap["hmm_model_path"] = simhash["hmm_model_path"] ? simhash["hmm_model_path"].as<std::string>() : throw std::runtime_error("missing required key: hmm_model_path");
+        _configMap["idf_path"] = simhash["idf_path"] ? simhash["idf_path"].as<std::string>() : throw std::runtime_error("missing required key: idf_path");
+
+        _configMap["STOP_WORDS_EN"] = stopword["STOP_WORDS_EN"] ? stopword["STOP_WORDS_EN"].as<std::string>() : throw std::runtime_error("missing required key: STOP_WORDS_EN");
+        _configMap["STOP_WORDS_CN"] = stopword["STOP_WORDS_CN"] ? stopword["STOP_WORDS_CN"].as<std::string>() : throw std::runtime_error("missing required key: STOP_WORDS_CN");
+
+        _configMap["WEB_PAGE_PATH"] = webpage["WEB_PAGE_PATH"] ? webpage["WEB_PAGE_PATH"].as<std::string>() : throw std::runtime_error("missing required key: WEB_PAGE_PATH");
+        _configMap["RI_PAGE_DAT"] = webpage["RI_PAGE_DAT"] ? webpage["RI_PAGE_DAT"].as<std::string>() : throw std::runtime_error("missing required key: RI_PAGE_DAT");
+        _configMap["OFFSET_DAT"] = webpage["OFFSET_DAT"] ? webpage["OFFSET_DAT"].as<std::string>() : throw std::runtime_error("missing required key: OFFSET_DAT");
+        _configMap["NEW_RIPE_PAGE_DAT"] = webpage["NEW_RIPE_PAGE_DAT"] ? webpage["NEW_RIPE_PAGE_DAT"].as<std::string>() : throw std::runtime_error("missing required key: NEW_RIPE_PAGE_DAT");
+        _configMap["NEW_OFFSET_DAT"] = webpage["NEW_OFFSET_DAT"] ? webpage["NEW_OFFSET_DAT"].as<std::string>() : throw std::runtime_error("missing required key: NEW_OFFSET_DAT");
+        _configMap["NEW_WEB_PAGE_PATH"] = webpage["NEW_WEB_PAGE_PATH"] ? webpage["NEW_WEB_PAGE_PATH"].as<std::string>() : throw std::runtime_error("missing required key: NEW_WEB_PAGE_PATH");
     }
-    _configMap.clear();
-    tinyxml2::XMLElement *item = nullptr;
-
-    string DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH; // Cppjieba五个文件路径
-    string jieba_dict_path, hmm_model_path, idf_path, stop_words_path;    // simhash四个文件路径
-    string WEB_PAGE_PATH, RI_PAGE_DAT, OFFSET_DAT;                        // 网页文件路径
-    string NEW_RIPE_PAGE_DAT, NEW_OFFSET_DAT, INVERT_INDEX_DAT;           // 新增的配置项
-
-    // JIEBA_DICT_UTF8
-
-    // 获取根节点下的path节点
-    tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
-    if (!pathElement)
+    catch (const YAML::BadFile &e)
     {
-        perror("Cannot find path element");
-        exit(1);
+        std::cerr << "failed to open " << _filePath << ": " << e.what() << '\n';
+        return;
     }
-
-    // 获取CPPJIEBA_PATH节点
-    tinyxml2::XMLElement *cppjiebaElement = pathElement->FirstChildElement("CPPJIEBA_PATH");
-    if (cppjiebaElement)
+    catch (const YAML::Exception &e)
     {
-        // JIEBA字典路径
-        item = cppjiebaElement->FirstChildElement("DICT_PATH");
-        if (item)
-        {
-            DICT_PATH = item->GetText();
-        }
-
-        // HMM模型路径
-        item = cppjiebaElement->FirstChildElement("HMM_PATH");
-        if (item)
-        {
-            HMM_PATH = item->GetText();
-        }
-
-        // 用户字典路径
-        item = cppjiebaElement->FirstChildElement("USER_DICT_PATH");
-        if (item)
-        {
-            USER_DICT_PATH = item->GetText();
-        }
-
-        // IDF路径
-        item = cppjiebaElement->FirstChildElement("IDF_PATH");
-        if (item)
-        {
-            IDF_PATH = item->GetText();
-        }
-
-        // 停用词路径
-        item = cppjiebaElement->FirstChildElement("STOP_WORD_PATH");
-        if (item)
-        {
-            STOP_WORD_PATH = item->GetText();
-        }
+        std::cerr << "yaml parse error: " << e.what() << '\n';
+        return;
     }
-
-    // 获取simhash路径
-    tinyxml2::XMLElement *simhashElement = pathElement->FirstChildElement("SIMHASH_PATH");
-    if (simhashElement)
+    catch (const std::exception &e)
     {
-        item = simhashElement->FirstChildElement("jieba_dict_path");
-        if (item)
-        {
-            jieba_dict_path = item->GetText();
-        }
-        item = simhashElement->FirstChildElement("hmm_model_path");
-        if (item)
-        {
-            hmm_model_path = item->GetText();
-        }
-        item = simhashElement->FirstChildElement("idf_path");
-        if (item)
-        {
-            idf_path = item->GetText();
-        }
-        item = simhashElement->FirstChildElement("stop_words_path");
-        if (item)
-        {
-            stop_words_path = item->GetText();
-        }
+        std::cerr << "config error: " << e.what() << '\n';
+        return;
     }
-
-    // 网页库相关配置
-    tinyxml2::XMLElement *webPage = pathElement->FirstChildElement("WEB_PAGE");
-    if (webPage)
-    {
-        item = webPage->FirstChildElement("WEB_PAGE_PATH");
-        if (item)
-        {
-            WEB_PAGE_PATH = item->GetText();
-        }
-        item = webPage->FirstChildElement("RI_PAGE_DAT");
-        if (item)
-        {
-            RI_PAGE_DAT = item->GetText();
-        }
-
-        item = webPage->FirstChildElement("OFFSET_DAT");
-        if (item)
-        {
-            OFFSET_DAT = item->GetText();
-        }
-
-        // 新增的配置项
-        item = webPage->FirstChildElement("NEW_RIPE_PAGE_DAT");
-        if (item)
-        {
-            NEW_RIPE_PAGE_DAT = item->GetText();
-        }
-
-        item = webPage->FirstChildElement("NEW_OFFSET_DAT");
-        if (item)
-        {
-            NEW_OFFSET_DAT = item->GetText();
-        }
-
-        item = webPage->FirstChildElement("INVERT_INDEX_DAT");
-        if (item)
-        {
-            INVERT_INDEX_DAT = item->GetText();
-        }
-    }
-
-    _configMap = {
-        {"DICT_PATH", DICT_PATH},
-        {"HMM_PATH", HMM_PATH},
-        {"USER_DICT_PATH", USER_DICT_PATH},
-        {"IDF_PATH", IDF_PATH},
-        {"STOP_WORD_PATH", STOP_WORD_PATH},
-
-        {"jieba_dict_path", jieba_dict_path},
-        {"hmm_model_path", hmm_model_path},
-        {"idf_path", idf_path},
-        {"stop_words_path", stop_words_path},
-
-        {"WEB_PAGE_PATH", WEB_PAGE_PATH},
-        {"RI_PAGE_DAT", RI_PAGE_DAT},
-        {"OFFSET_DAT", OFFSET_DAT},
-        {"NEW_RIPE_PAGE_DAT", NEW_RIPE_PAGE_DAT}, // 新增配置项
-        {"NEW_OFFSET_DAT", NEW_OFFSET_DAT},       // 新增配置项
-        {"INVERT_INDEX_DAT", INVERT_INDEX_DAT}    // 新增配置项
-    };
 
     return _configMap;
 }
@@ -200,41 +101,53 @@ map<string, string> &Configuration::getConfigMap()
 // 获取停用词词集
 set<string> Configuration::getStopWordList()
 {
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile(_filePath.c_str());
-    if (doc.ErrorID())
-    {
-        perror("Configuration::getStopWordList: LoadFile");
-        exit(1);
-    }
 
-    tinyxml2::XMLElement *item = nullptr;
     vector<string> paths;
+    try
+    {
+        YAML::Node config = YAML::LoadFile(_filePath);
+        std::map<std::string, std::string> _configMap;
 
-    // 获取根节点下的path节点
-    tinyxml2::XMLElement *pathElement = doc.FirstChildElement("path");
-    if (!pathElement)
-    {
-        perror("Configuration::getStopWordList: Cannot find path element");
-        exit(1);
-    }
+        const YAML::Node stopword = config["STOP_WORD_LIST"];
 
-    tinyxml2::XMLElement *stopWordElement = pathElement->FirstChildElement("STOP_WORD_LIST");
-    if (!stopWordElement)
-    {
-        perror("Configuration::getStopWordList: Cannot find STOP_WORD_LIST element");
-        exit(1);
-    }
+        if (!stopword)
+        {
+            std::cerr << "configuration section is missing in " << _filePath << '\n';
+            return;
+        }
 
-    item = stopWordElement->FirstChildElement("STOP_WORDS_EN");
-    if (item)
-    {
-        paths.push_back(item->GetText());
+        if (stopword["STOP_WORDS_EN"])
+        {
+            paths.push_back(stopword["STOP_WORDS_EN"].as<std::string>());
+        }
+        else
+        {
+            throw std::runtime_error("missing required key: STOP_WORDS_EN");
+        }
+
+        if (stopword["STOP_WORDS_CN"])
+        {
+            paths.push_back(stopword["STOP_WORDS_CN"].as<std::string>());
+        }
+        else
+        {
+            throw std::runtime_error("missing required key: STOP_WORDS_CN");
+        }
     }
-    item = stopWordElement->FirstChildElement("STOP_WORDS_CN");
-    if (item)
+    catch (const YAML::BadFile &e)
     {
-        paths.push_back(item->GetText());
+        std::cerr << "failed to open " << _filePath << ": " << e.what() << '\n';
+        return;
+    }
+    catch (const YAML::Exception &e)
+    {
+        std::cerr << "yaml parse error: " << e.what() << '\n';
+        return;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "config error: " << e.what() << '\n';
+        return;
     }
 
     for (auto &path : paths)

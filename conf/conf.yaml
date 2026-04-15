@@ -1,0 +1,25 @@
+CPPJIEBA_PATH:
+  DICT_PATH: /home/dingjr/workSpace/myDev/search-engine/include/cppjieba/dict/jieba.dict.utf8
+  HMM_PATH: /home/dingjr/workSpace/myDev/search-engine/include/cppjieba/dict/hmm_model.utf8
+  USER_DICT_PATH: /home/dingjr/workSpace/myDev/search-engine/include/cppjieba/dict/user.dict.utf8
+  IDF_PATH: /home/dingjr/workSpace/myDev/search-engine/include/cppjieba/dict/idf.utf8
+  STOP_WORD_PATH: /home/dingjr/workSpace/myDev/search-engine/include/cppjieba/dict/stop_words.utf8
+
+SIMHASH_PATH:
+  jieba_dict_path: /home/dingjr/workSpace/myDev/search-engine/include/simhash/dict/jieba.dict.utf8
+  hmm_model_path: /home/dingjr/workSpace/myDev/search-engine/include/simhash/dict/hmm_model.utf8
+  idf_path: /home/dingjr/workSpace/myDev/search-engine/include/simhash/dict/idf.utf8
+
+STOP_WORD_LIST:
+  STOP_WORDS_EN: /home/dingjr/workSpace/myDev/search-engine/include/stop_words/stop_words_en.txt
+  STOP_WORDS_CN: /home/dingjr/workSpace/myDev/search-engine/data/stop-words-list/stop_words_zh.txt
+
+WEB_PAGE:
+  WEB_PAGE_PATH: /home/dingjr/workSpace/myDev/search-engine/source/websource
+
+  RI_PAGE_DAT: /home/dingjr/workSpace/myDev/search-engine/data/ripage.dat
+  OFFSET_DAT: /home/dingjr/workSpace/myDev/search-engine/data/offset.dat
+
+  NEW_RIPE_PAGE_DAT: /home/dingjr/workSpace/myDev/search-engine/data/newripepage.dat
+  NEW_OFFSET_DAT: /home/dingjr/workSpace/myDev/search-engine/data/newoffset.dat
+  INVERT_INDEX_DAT: /home/dingjr/workSpace/myDev/search-engine/data/invertindex.dat
